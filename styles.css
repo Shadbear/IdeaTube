@@ -1,0 +1,125 @@
+/* ==========================================================
+   ESTILO NEO-FUTURISTA: YOUTUBE x MINECRAFT CYBERPUNK
+   ========================================================== */
+
+/* 1. Fondo principal y tipografía base */
+html, body, [data-testid="stAppViewContainer"], .stApp {
+    background-color: #0A0C10 !important;
+    background-image: 
+        radial-gradient(at 0% 0%, rgba(255, 0, 0, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(0, 255, 102, 0.05) 0px, transparent 50%) !important;
+    color: #E6EDF3 !important;
+    font-family: 'Segoe UI', Roboto, monospace, sans-serif !important;
+}
+
+/* 2. Barra Superior y Limpieza de bordes */
+header[data-testid="stHeader"] {
+    background-color: transparent !important;
+}
+
+/* 3. Barra Lateral (Sidebar estilo Redstone/Interfaz Tech) */
+section[data-testid="stSidebar"] {
+    background-color: #0F1218 !important;
+    border-right: 2px solid #1F2633 !important;
+    box-shadow: 4px 0px 15px rgba(0, 0, 0, 0.5) !important;
+}
+
+section[data-testid="stSidebar"] * {
+    color: #C9D1D9 !important;
+}
+
+/* Títulos en la barra lateral */
+section[data-testid="stSidebar"] h1, 
+section[data-testid="stSidebar"] h2, 
+section[data-testid="stSidebar"] h3 {
+    color: #00FF66 !important;
+    text-shadow: 0 0 8px rgba(0, 255, 102, 0.4);
+    letter-spacing: 1px;
+}
+
+/* 4. Tarjetas de Mensajes del Chat (Efecto Pixel Glass) */
+.stChatMessage {
+    background-color: #131722 !important;
+    border: 1px solid #222938 !important;
+    border-left: 4px solid #FF0000 !important; /* Rojo Neón YouTube */
+    border-radius: 4px !important; /* Esquinas estilo bloque */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+    margin-bottom: 1rem !important;
+}
+
+/* Mensajes del Usuario con acento Verde Esmeralda */
+[data-testid="stChatMessage"][data-testimonial="user"],
+.stChatMessage:nth-child(even) {
+    border-left: 4px solid #00FF66 !important;
+}
+
+/* Forzar lectura clara del texto */
+[data-testid="stMarkdownContainer"] *,
+.stChatMessage * {
+    color: #F0F6FC !important;
+}
+
+/* Títulos dentro de las respuestas */
+[data-testid="stMarkdownContainer"] h1, 
+[data-testid="stMarkdownContainer"] h2, 
+[data-testid="stMarkdownContainer"] h3 {
+    color: #00FF66 !important;
+    text-shadow: 0 0 6px rgba(0, 255, 102, 0.3);
+}
+
+/* 5. Barra Inferior de Escritura (Chat Input Cyberpunk) */
+[data-testid="stBottom"],
+[data-testid="stBottom"] > div,
+[data-testid="stChatInput"] {
+    background-color: #0A0C10 !important;
+}
+
+div[data-baseweb="input"],
+div[data-baseweb="base-input"] {
+    background-color: #131722 !important;
+    border: 1px solid #2B3548 !important;
+    border-radius: 6px !important;
+    transition: all 0.3s ease !important;
+}
+
+/* Efecto Neón al hacer clic/escribir */
+div[data-baseweb="input"]:focus-within {
+    border-color: #FF0000 !important;
+    box-shadow: 0 0 12px rgba(255, 0, 0, 0.5) !important;
+}
+
+/* Texto que escribes */
+textarea[data-testid="stChatInputTextArea"] {
+    background-color: transparent !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+    font-size: 1rem !important;
+}
+
+textarea[data-testid="stChatInputTextArea"]::placeholder {
+    color: #6E7681 !important;
+    -webkit-text-fill-color: #6E7681 !important;
+}
+
+/* 6. Botón de Enviar con brillo Neón */
+[data-testid="stChatInputSubmitButton"] {
+    background-color: #FF0000 !important;
+    color: #FFFFFF !important;
+    border-radius: 4px !important;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.6) !important;
+    transition: transform 0.1s ease !important;
+}
+
+[data-testid="stChatInputSubmitButton"]:hover {
+    transform: scale(1.05);
+    background-color: #FF2E2E !important;
+}
+
+/* 7. Cajas de Alerta/Info estilo Bloque Redstone */
+div[data-testid="stAlert"] {
+    background-color: #1A1015 !important;
+    border: 1px solid #7D1212 !important;
+    border-left: 4px solid #FF0000 !important;
+    color: #FFD1D1 !important;
+    border-radius: 4px !important;
+}
