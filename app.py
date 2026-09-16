@@ -1,31 +1,11 @@
 import os
-import json
 from datetime import datetime
 import streamlit as st
 import streamlit.components.v1 as components
 from google import genai
+from google.genai import types
 import pymongo
 
-MONGO_URI = st.secrets.get("MONGO_URI", "")
-client_db = pymongo.MongoClient(MONGO_URI)
-db = client_db["ideatuve_db"]
-chats_collection = db["chats"]
-
-
-def load_all_chats():
-    chats = {}
-    for doc in chats_collection.find({}, {"_id": 0}):
-        chats[doc["chat_id"]] = doc["messages"]
-    return chats
-
-
-def save_all_chats(chats):
-    for chat_id, messages in chats.items():
-        chats_collection.update_one(
-            {"chat_id": chat_id},
-            {"$set": {"chat_id": chat_id, "messages": messages}},
-            upsert=True,
-        )
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(
     page_title="IdeaTuve - Minecraft Shorts Studio",
@@ -36,25 +16,55 @@ st.set_page_config(
 
 # --- CARGAR HOJA DE ESTILOS EXTERNA ---
 def load_css(file_name):
-    with open(file_name, "r", encoding="utf-8") as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    if os.path.exists(file_name):
+        with open(file_name, "r", encoding="utf-8") as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 load_css("styles.css")
 
-# --- FUNCIONES DE PERSISTENCIA (GUARDAR / CARGAR HISTORIAL) ---
-HISTORY_FILE = "chat_history.json"
+# --- CONEXIÓN A MONGO DB ATLAS Y GEMINI API ---
+GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY", "")
+MONGO_URI = st.secrets.get("MONGO_URI", "")
 
+# Inicializar Cliente de Gemini
+client = genai.Client(api_key=GEMINI_API_KEY)
+
+# Inicializar Cliente de MongoDB
+@st.cache_resource
+def get_mongo_client():
+    return pymongo.MongoClient(MONGO_URI)
+
+try:
+    client_db = get_mongo_client()
+    db = client_db["ideatuve_db"]
+    chats_collection = db["chats"]
+except Exception as e:
+    st.error(f"Error al conectar con MongoDB: {e}")
+
+# --- FUNCIONES DE PERSISTENCIA CON MONGOBD ---
 def load_all_chats():
-    if os.path.exists(HISTORY_FILE):
-        with open(HISTORY_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {}
+    chats = {}
+    try:
+        for doc in chats_collection.find({}, {"_id": 0}):
+            chats[doc["chat_id"]] = {
+                "title": doc.get("title", "Conversación"),
+                "messages": doc.get("messages", [])
+            }
+    except Exception as e:
+        st.error(f"Error al cargar chats desde la base de datos: {e}")
+    return chats
 
-def save_all_chats(chats):
-    with open(HISTORY_FILE, "w", encoding="utf-8") as f:
-        json.dump(chats, f, ensure_ascii=False, indent=2)
+def save_chat_to_db(chat_id, title, messages):
+    try:
+        chats_collection.update_one(
+            {"chat_id": chat_id},
+            {"$set": {"chat_id": chat_id, "title": title, "messages": messages}},
+            upsert=True
+        )
+    except Exception as e:
+        st.error(f"Error al guardar en MongoDB: {e}")
 
-# Inicializar sesión y chats guardados
+# --- INICIALIZAR ESTADO DE SESIÓN ---
 if "all_chats" not in st.session_state:
     st.session_state.all_chats = load_all_chats()
 
@@ -63,12 +73,6 @@ if "current_chat_id" not in st.session_state:
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
-
-# --- API KEY ---
-# Reemplaza la línea vieja por esta:
-GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY", "")
-MONGO_URI = st.secrets.get("MONGO_URI", "")
-client = genai.Client(api_key=GEMINI_API_KEY)
 
 # --- BARRA LATERAL ---
 with st.sidebar:
@@ -87,11 +91,10 @@ with st.sidebar:
     if st.session_state.all_chats:
         st.caption("Conversaciones anteriores:")
         for chat_id, chat_data in list(st.session_state.all_chats.items())[::-1]:
-            # Usar el primer mensaje del usuario como título de la conversación
-            title = chat_data["title"] if "title" in chat_data else chat_id
+            title = chat_data.get("title", chat_id)
             if st.button(f"💬 {title[:20]}...", key=chat_id, use_container_width=True):
                 st.session_state.current_chat_id = chat_id
-                st.session_state.messages = chat_data["messages"]
+                st.session_state.messages = chat_data.get("messages", [])
                 st.rerun()
     else:
         st.caption("No hay chats guardados aún.")
@@ -115,7 +118,7 @@ with st.sidebar:
         height=210
     )
 
-# --- ENCABEZADO ---
+# --- ENCABEZADO PRINCIPAL ---
 st.title("🎬 IdeaTuve - Minecraft Short Generator")
 st.caption("Asistente de IA para crear animaciones cortas, memes y tendencias sin voz.")
 
@@ -124,7 +127,7 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# --- CHAT INPUT & PROCESAMIENTO ---
+# --- INPUT DEL USUARIO Y PROCESAMIENTO ---
 if user_prompt := st.chat_input("Ej: Dame 3 ideas de memes virales para animar en Minecraft esta semana"):
     st.chat_message("user").markdown(user_prompt)
     st.session_state.messages.append({"role": "user", "content": user_prompt})
@@ -139,6 +142,7 @@ if user_prompt := st.chat_input("Ej: Dame 3 ideas de memes virales para animar e
         "4. Guión visual paso a paso."
     )
 
+    # Construir historial para la API
     contents = []
     for m in st.session_state.messages:
         role = "user" if m["role"] == "user" else "model"
@@ -148,13 +152,17 @@ if user_prompt := st.chat_input("Ej: Dame 3 ideas de memes virales para animar e
         with st.spinner("Pensando ideas virales..."):
             try:
                 response = client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=prompt,
-)
+                    model="gemini-2.5-flash",
+                    contents=contents,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_instruction
+                    )
+                )
+                
                 st.markdown(response.text)
                 st.session_state.messages.append({"role": "assistant", "content": response.text})
 
-                # --- GUARDAR EN ARCHIVO JSON LOCAL ---
+                # --- GUARDAR EN MONGODB ATLAS ---
                 chat_id = st.session_state.current_chat_id
                 first_msg = st.session_state.messages[0]["content"] if st.session_state.messages else "Nuevo Chat"
                 
@@ -162,7 +170,8 @@ if user_prompt := st.chat_input("Ej: Dame 3 ideas de memes virales para animar e
                     "title": first_msg,
                     "messages": st.session_state.messages
                 }
-                save_all_chats(st.session_state.all_chats)
+                
+                save_chat_to_db(chat_id, first_msg, st.session_state.messages)
 
             except Exception as e:
                 st.error(f"Error al generar la respuesta: {e}")
