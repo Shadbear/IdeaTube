@@ -1,11 +1,10 @@
+import os
+import json
+from datetime import datetime
 import streamlit as st
 import streamlit.components.v1 as components
 from google import genai
-import json
-import os
-from datetime import datetime
 import pymongo
-import streamlit as st
 
 MONGO_URI = st.secrets.get("MONGO_URI", "")
 client_db = pymongo.MongoClient(MONGO_URI)
@@ -68,6 +67,7 @@ if "messages" not in st.session_state:
 # --- API KEY ---
 # Reemplaza la línea vieja por esta:
 GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY", "")
+MONGO_URI = st.secrets.get("MONGO_URI", "")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 # --- BARRA LATERAL ---
