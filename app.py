@@ -4,7 +4,29 @@ from google import genai
 import json
 import os
 from datetime import datetime
+import pymongo
+import streamlit as st
 
+MONGO_URI = st.secrets.get("MONGO_URI", "")
+client_db = pymongo.MongoClient(MONGO_URI)
+db = client_db["ideatuve_db"]
+chats_collection = db["chats"]
+
+
+def load_all_chats():
+    chats = {}
+    for doc in chats_collection.find({}, {"_id": 0}):
+        chats[doc["chat_id"]] = doc["messages"]
+    return chats
+
+
+def save_all_chats(chats):
+    for chat_id, messages in chats.items():
+        chats_collection.update_one(
+            {"chat_id": chat_id},
+            {"$set": {"chat_id": chat_id, "messages": messages}},
+            upsert=True,
+        )
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(
     page_title="IdeaTuve - Minecraft Shorts Studio",
