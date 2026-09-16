@@ -148,7 +148,7 @@ if user_prompt := st.chat_input("Ej: Dame 3 ideas de memes virales para animar e
         with st.spinner("Pensando ideas virales..."):
             try:
                 response = client.models.generate_content(
-                    model="gemini-2.5-flash",
+                    model="gemini-1.5-flash",
                     contents=contents,
                     config={"system_instruction": system_instruction}
                 )
